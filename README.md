@@ -1,4 +1,4 @@
-# 🌐 无边框浏览器 (Frameless Browser)
+# <img src="images/logo.ico" width="32" height="32" align="center" /> 无边框浏览器 (Frameless Browser)
 
 一个基于 Electron 开发的透明悬浮浏览器，支持隐身模式、多窗口管理和沉浸式浏览体验。
 
