@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>无边框浏览器</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Microsoft YaHei', sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+    }
+
+    .container {
+      width: 400px;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 22px;
+      margin-bottom: 8px;
+      letter-spacing: 2px;
+      color: #e0e0e0;
+    }
+
+    p.subtitle {
+      font-size: 12px;
+      color: #888;
+      margin-bottom: 28px;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid #444;
+      background: rgba(255,255,255,0.08);
+      color: #fff;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input[type="text"]:focus { border-color: #5b9bd5; }
+    input[type="text"]::placeholder { color: #666; }
+
+    button {
+      padding: 10px 20px;
+      border-radius: 8px;
+      border: none;
+      background: #5b9bd5;
+      color: #fff;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      white-space: nowrap;
+    }
+    button:hover  { background: #4a8ac4; }
+    button:active { transform: scale(0.97); }
+
+    .tip {
+      margin-top: 16px;
+      font-size: 11px;
+      color: #555;
+      line-height: 1.8;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🌐 无边框浏览器</h1>
+    <p class="subtitle">悬浮透明 · 隐身模式 · 沉浸浏览</p>
+    <div class="input-row">
+      <input id="urlInput" type="text" placeholder="输入网址，如 baidu.com" />
+      <button id="visitBtn">访问</button>
+    </div>
+    <div class="tip">
+      移入窗口上半部分可切换「隐身模式」<br>
+      隐身模式开启后，鼠标移出窗口自动透明
+    </div>
+  </div>
+
+  <script>
+    const input = document.getElementById('urlInput');
+    const btn   = document.getElementById('visitBtn');
+
+    async function openBrowser() {
+      const url = input.value.trim();
+      if (!url) { input.focus(); return; }
+      btn.disabled = true;
+      btn.textContent = '打开中…';
+      try {
+        await window.electronAPI.openBrowser(url);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '访问';
+      }
+    }
+
+    btn.addEventListener('click', openBrowser);
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') openBrowser();
+    });
+
+    // 自动聚焦
+    input.focus();
+  </script>
+</body>
+</html>

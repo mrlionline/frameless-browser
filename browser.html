@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>无边框浏览器</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      width: 100%; height: 100%;
+      overflow: hidden;
+      background: transparent;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── webview 填充剩余空间 ── */
+    webview {
+      flex: 1;
+      width: 100%;
+      min-height: 0;
+      border-radius: 0 0 8px 8px;
+    }
+
+    /* ── 顶部触发区：与顶栏等高，透明覆盖在顶栏上方 ── */
+    #top-trigger {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 46px;
+      z-index: 9998;
+      background: transparent;
+      pointer-events: all;
+      -webkit-app-region: no-drag;
+    }
+
+    /* ── 顶部操作栏 ── */
+    #top-bar {
+      width: 100%;
+      height: 46px;
+      flex-shrink: 0;
+      background: rgba(20, 20, 30, 0.72);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-radius: 8px 8px 0 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+      z-index: 9999;
+      -webkit-app-region: no-drag;
+      /* 默认隐藏：透明 + 不响应鼠标 */
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.18s ease;
+    }
+
+    #top-bar.visible {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    /* 左侧标题（拖拽手柄样式，实际拖拽由 JS 实现） */
+    .bar-title {
+      font-size: 12px;
+      color: rgba(255,255,255,0.45);
+      user-select: none;
+      letter-spacing: 1px;
+      cursor: move;
+      white-space: nowrap;
+      padding-right: 8px;
+    }
+
+    /* URL 输入框 */
+    .bar-url {
+      flex: 1;
+      height: 26px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 5px;
+      color: #fff;
+      font-size: 12px;
+      padding: 0 10px;
+      outline: none;
+      transition: background 0.15s, border-color 0.15s;
+      min-width: 0;
+    }
+    .bar-url:focus {
+      background: rgba(255,255,255,0.16);
+      border-color: rgba(91,155,213,0.8);
+    }
+    .bar-url::placeholder { color: rgba(255,255,255,0.3); }
+
+    /* 访问按钮 */
+    .bar-go {
+      height: 26px;
+      padding: 0 10px;
+      background: rgba(91,155,213,0.7);
+      border: none;
+      border-radius: 5px;
+      color: #fff;
+      font-size: 12px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s;
+      flex-shrink: 0;
+    }
+    .bar-go:hover { background: rgba(74,138,196,0.9); }
+
+    /* 右侧控件 */
+    .bar-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+      margin-left: 10px;
+    }
+
+    /* 分隔线 */
+    .bar-sep {
+      width: 1px;
+      height: 18px;
+      background: rgba(255,255,255,0.15);
+      flex-shrink: 0;
+    }
+
+    /* 窗口控制按钮组 */
+    .win-btns {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    /* 共用圆形按钮基础样式 */
+    .win-btn {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      border: none;
+      cursor: pointer;
+      position: relative;
+      transition: filter 0.15s, transform 0.1s;
+      flex-shrink: 0;
+    }
+    .win-btn:hover  { filter: brightness(1.25); transform: scale(1.15); }
+    .win-btn:active { transform: scale(0.95); }
+
+    /* 各按钮颜色 */
+    .min-btn  { background: rgba(255,189,68,0.85); }
+    .max-btn  { background: rgba(40,200,100,0.85); }
+    .close-btn { background: rgba(255,80,80,0.85); width: 14px; height: 14px; }
+
+    /* 图标（默认隐藏，hover 时显示） */
+    .win-btn::before, .win-btn::after {
+      content: '';
+      position: absolute;
+      background: rgba(0,0,0,0.55);
+      border-radius: 1px;
+      opacity: 0;
+      transition: opacity 0.1s;
+    }
+    .win-btn:hover::before, .win-btn:hover::after { opacity: 1; }
+
+    /* 最小化: 横线 */
+    .min-btn::before {
+      width: 8px; height: 1.5px;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+    }
+    .min-btn::after { display: none; }
+
+    /* 最大化: 方形边框 */
+    .max-btn::before {
+      width: 8px; height: 8px;
+      border: 1.5px solid rgba(0,0,0,0.55);
+      background: transparent;
+      border-radius: 1.5px;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+    }
+    .max-btn::after { display: none; }
+
+    /* 关闭: X */
+    .close-btn::before,
+    .close-btn::after {
+      width: 8px; height: 1.5px;
+      top: 50%; left: 50%;
+    }
+    .close-btn::before { transform: translate(-50%, -50%) rotate(45deg); }
+    .close-btn::after  { transform: translate(-50%, -50%) rotate(-45deg); }
+
+    .stealth-label {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 12px;
+      color: rgba(255,255,255,0.75);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .toggle-wrap {
+      position: relative;
+      width: 34px;
+      height: 18px;
+      flex-shrink: 0;
+    }
+    .toggle-wrap input { display: none; }
+    .toggle-track {
+      position: absolute;
+      inset: 0;
+      border-radius: 9px;
+      background: #555;
+      transition: background 0.2s;
+    }
+    .toggle-thumb {
+      position: absolute;
+      width: 12px; height: 12px;
+      top: 3px; left: 3px;
+      border-radius: 50%;
+      background: #fff;
+      transition: transform 0.2s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+    }
+    .toggle-wrap input:checked ~ .toggle-track { background: #4ade80; }
+    .toggle-wrap input:checked ~ .toggle-thumb { transform: translateX(16px); }
+
+    /* 删除旧关闭按钮独立样式（已并入 win-btn） */
+
+    /* ── 欢迎页 ── */
+    #welcome {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      border-radius: 8px;
+      z-index: 9997;
+      color: #fff;
+      font-family: 'Microsoft YaHei', sans-serif;
+      text-align: center;
+      padding: 0 40px;
+      transition: opacity 0.3s ease;
+    }
+    #welcome.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+    #welcome h1 {
+      font-size: 24px;
+      letter-spacing: 3px;
+      color: #e0e0e0;
+      margin-bottom: 8px;
+    }
+    #welcome .subtitle {
+      font-size: 13px;
+      color: #888;
+      margin-bottom: 16px;
+    }
+    #welcome .features {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px 24px;
+      max-width: 500px;
+      text-align: left;
+      margin-bottom: 16px;
+    }
+    #welcome .feat-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    #welcome .feat-icon {
+      font-size: 20px;
+      flex-shrink: 0;
+      line-height: 1.4;
+    }
+    #welcome .feat-text strong {
+      display: block;
+      font-size: 13px;
+      color: #c8d8ec;
+      margin-bottom: 2px;
+    }
+    #welcome .feat-text span {
+      font-size: 11px;
+      color: #666;
+      line-height: 1.5;
+    }
+    #welcome .hint {
+      font-size: 11px;
+      color: #444;
+      line-height: 1.8;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      padding-top: 12px;
+      width: 100%;
+      max-width: 500px;
+    }
+
+    /* ── 布局示意图 ── */
+    .layout-diagram {
+      width: 100%;
+      max-width: 500px;
+      margin-bottom: 14px;
+    }
+    .layout-diagram .diag-title {
+      font-size: 11px;
+      color: #555;
+      margin-bottom: 10px;
+      text-align: left;
+      letter-spacing: 1px;
+    }
+    .diag-window {
+      display: flex;
+      flex-direction: column;
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 7px;
+      overflow: hidden;
+      position: relative;
+    }
+    /* 操作栏 */
+    .diag-topbar {
+      background: rgba(91,155,213,0.25);
+      border-bottom: 1px solid rgba(91,155,213,0.4);
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 10px;
+      font-size: 10px;
+      color: rgba(255,255,255,0.7);
+      flex-shrink: 0;
+      position: relative;
+      z-index: 1;
+    }
+    .diag-topbar-label {
+      font-weight: bold;
+      color: #7ab8e8;
+      letter-spacing: 0.5px;
+    }
+    .diag-topbar-dots {
+      display: flex; gap: 4px;
+    }
+    .diag-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+    }
+    /* 下半区：占位区 + 内容区 + 占位区 */
+    .diag-body {
+      display: flex;
+      height: 88px;
+    }
+    .diag-side {
+      width: 30px;
+      flex-shrink: 0;
+      background: repeating-linear-gradient(
+        45deg,
+        rgba(255,180,50,0.08) 0px,
+        rgba(255,180,50,0.08) 3px,
+        transparent 3px,
+        transparent 8px
+      );
+      border: 1px dashed rgba(255,180,50,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    .diag-side:first-child { border-left: none; border-top: none; border-bottom: none; }
+    .diag-side:last-child  { border-right: none; border-top: none; border-bottom: none; }
+    .diag-side-text {
+      font-size: 9px;
+      color: rgba(255,180,50,0.7);
+      writing-mode: vertical-rl;
+      letter-spacing: 1px;
+      user-select: none;
+    }
+    .diag-content {
+      flex: 1;
+      background: rgba(15,52,96,0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      color: rgba(255,255,255,0.35);
+      letter-spacing: 1px;
+    }
+    /* 标注列表 */
+    .diag-legend {
+      display: flex;
+      gap: 16px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+    .diag-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 10px;
+      color: #777;
+    }
+    .diag-legend-item .swatch {
+      width: 10px; height: 10px;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+    .swatch-bar     { background: rgba(91,155,213,0.5); border: 1px solid rgba(91,155,213,0.6); }
+    .swatch-content { background: rgba(15,52,96,0.6);   border: 1px solid rgba(91,155,213,0.2); }
+    .swatch-side    { background: rgba(255,180,50,0.2);  border: 1px dashed rgba(255,180,50,0.5); }
+
+    /* ── 加载提示 ── */
+    #loading {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(15,15,25,0.88);
+      border-radius: 8px;
+      color: rgba(255,255,255,0.7);
+      font-size: 13px;
+      gap: 12px;
+      z-index: 9998;
+    }
+    #loading.hidden { display: none; }
+    .spinner {
+      width: 28px; height: 28px;
+      border: 3px solid rgba(255,255,255,0.15);
+      border-top-color: #5b9bd5;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+  <!-- 欢迎页 -->
+  <div id="welcome">
+    <h1>🌐 无边框浏览器</h1>
+    <p class="subtitle">悬浮透明 · 隐身模式 · 沉浸浏览</p>
+    <div class="features">
+      <div class="feat-item">
+        <span class="feat-icon">🔲</span>
+        <div class="feat-text">
+          <strong>无边框透明窗口</strong>
+          <span>访问任意网址，以悬浮透明窗口呈现，叠加在桌面上方</span>
+        </div>
+      </div>
+      <div class="feat-item">
+        <span class="feat-icon">👻</span>
+        <div class="feat-text">
+          <strong>隐身模式</strong>
+          <span>开启后鼠标移出窗口自动透明隐藏，移回立即恢复</span>
+        </div>
+      </div>
+      <div class="feat-item">
+        <span class="feat-icon">☝️</span>
+        <div class="feat-text">
+          <strong>顶栏呼出</strong>
+          <span>鼠标移到窗口顶部区域，自动显示操作栏</span>
+        </div>
+      </div>
+      <div class="feat-item">
+        <span class="feat-icon">↔️</span>
+        <div class="feat-text">
+          <strong>自由拖拽 &amp; 缩放</strong>
+          <span>拖动顶栏移动窗口，拖动边缘调整窗口大小</span>
+        </div>
+      </div>
+    </div>
+    <!-- 布局示意图 -->
+    <div class="layout-diagram">
+      <p class="diag-title">▎ 窗口区域示意</p>
+      <div class="diag-window">
+        <!-- 操作栏 -->
+        <div class="diag-topbar">
+          <span class="diag-topbar-label">操作栏 &nbsp;<span style="font-weight:normal;color:rgba(255,255,255,0.4);font-size:9px">鼠标移入此区域显示，移出隐藏；拖动左侧可移动窗口</span></span>
+          <div class="diag-topbar-dots">
+            <div class="diag-dot" style="background:rgba(255,189,68,0.7)"></div>
+            <div class="diag-dot" style="background:rgba(40,200,100,0.7)"></div>
+            <div class="diag-dot" style="background:rgba(255,80,80,0.7)"></div>
+          </div>
+        </div>
+        <!-- 内容层 -->
+        <div class="diag-body">
+          <div class="diag-side">
+            <span class="diag-side-text">占位区</span>
+          </div>
+          <div class="diag-content">内容区（网页）</div>
+          <div class="diag-side">
+            <span class="diag-side-text">占位区</span>
+          </div>
+        </div>
+      </div>
+      <div class="diag-legend">
+        <div class="diag-legend-item"><span class="swatch swatch-bar"></span>操作栏：输入网址、隐身开关、窗口控制</div>
+        <div class="diag-legend-item"><span class="swatch swatch-content"></span>内容区：网页渲染区域</div>
+        <div class="diag-legend-item"><span class="swatch swatch-side"></span>占位区：左右30px，隐身模式下鼠标在此可显示窗口，不触发网页事件</div>
+      </div>
+    </div>
+
+    <div class="hint">
+      在上方顶栏输入网址后按 Enter 或点击「访问」开始浏览<br>
+      顶栏左侧空白区域可拖动窗口位置
+    </div>
+  </div>
+
+  <!-- 加载中蒙层 -->
+  <div id="loading" class="hidden">
+    <div class="spinner"></div>
+    <span id="loading-text">正在加载…</span>
+  </div>
+
+  <!-- 顶部触发区（始终透明拦截，保证 webview 不吞掉鼠标事件）-->
+  <div id="top-trigger"></div>
+
+  <!-- 顶部操作栏 -->
+  <div id="top-bar" class="visible">
+    <span class="bar-title">🌐</span>
+    <input class="bar-url" id="urlInput" type="text" placeholder="输入网址，按 Enter 或点击访问" spellcheck="false" />
+    <button class="bar-go" id="goBtn">访问</button>
+    <div class="bar-controls">
+      <label class="stealth-label">
+        隐身模式
+        <div class="toggle-wrap">
+          <input type="checkbox" id="stealthCheck" />
+          <span class="toggle-track"></span>
+          <span class="toggle-thumb"></span>
+        </div>
+      </label>
+      <div class="bar-sep"></div>
+      <div class="win-btns">
+        <button class="win-btn min-btn" id="minBtn" title="最小化"></button>
+        <button class="win-btn max-btn" id="maxBtn" title="最大化"></button>
+        <button class="win-btn close-btn" id="closeBtn" title="关闭"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 网页内容 -->
+  <webview id="webview" src="about:blank" allowpopups></webview>
+
+  <script>
+    const topBar      = document.getElementById('top-bar');
+    const stealthCheck= document.getElementById('stealthCheck');
+    const closeBtn    = document.getElementById('closeBtn');
+    const minBtn      = document.getElementById('minBtn');
+    const maxBtn      = document.getElementById('maxBtn');
+    const webview     = document.getElementById('webview');
+    const loading     = document.getElementById('loading');
+    const loadingText = document.getElementById('loading-text');
+    const topTrigger  = document.getElementById('top-trigger');
+    const urlInput    = document.getElementById('urlInput');
+    const goBtn       = document.getElementById('goBtn');
+
+    let winId      = null;
+    let mouseInWin = true;
+    let hasLoaded  = false; // 是否已访问过网页
+
+    // ── 导航函数 ───────────────────────────────────────────────
+    const welcome = document.getElementById('welcome');
+
+    function navigate() {
+      let url = urlInput.value.trim();
+      if (!url) return;
+      if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+      loadingText.textContent = `正在加载 ${url}`;
+      loading.classList.remove('hidden');
+      welcome.classList.add('hidden');  // 隐藏欢迎页
+      webview.src = url;
+      hasLoaded = true;
+      urlInput.blur();
+    }
+
+    goBtn.addEventListener('click', navigate);
+    urlInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') navigate();
+      e.stopPropagation(); // 防止冒泡触发拖拽
+    });
+    // 点击输入框时不触发拖拽
+    urlInput.addEventListener('mousedown', (e) => e.stopPropagation());
+
+    // ── 接收主进程消息 ─────────────────────────────────────────
+    // 带初始 URL 的新窗口（点链接开启）
+    window.browserAPI.onInitialUrl((url) => {
+      urlInput.value = url;
+      navigate();
+    });
+
+    window.browserAPI.onMouseEntered(() => {
+      mouseInWin = true;
+    });
+
+    window.browserAPI.onMouseLeft(() => {
+      mouseInWin = false;
+      // 有网页内容时才隐藏顶栏；空白页时保持显示
+      if (hasLoaded) topBar.classList.remove('visible');
+    });
+
+    // ── 顶部触发区 / 顶栏 显示逻辑 ────────────────────────────
+    // 触发区 mouseenter → 显示顶栏
+    topTrigger.addEventListener('mouseenter', () => {
+      if (!mouseInWin) return;
+      topBar.classList.add('visible');
+    });
+
+    // 顶栏 mouseenter（从触发区滑入时也会触发，保持显示）
+    topBar.addEventListener('mouseenter', () => {
+      if (!mouseInWin) return;
+      topBar.classList.add('visible');
+    });
+
+    // 顶栏 mouseleave：鼠标离开整个顶部区域时，有网页才隐藏
+    topBar.addEventListener('mouseleave', (e) => {
+      if (!hasLoaded) return; // 没有网页时始终显示
+      if (e.relatedTarget === topTrigger || topTrigger.contains(e.relatedTarget)) return;
+      topBar.classList.remove('visible');
+    });
+
+    // 触发区 mouseleave：移出触发区且不进入顶栏时，有网页才隐藏
+    topTrigger.addEventListener('mouseleave', (e) => {
+      if (!hasLoaded) return;
+      if (e.relatedTarget === topBar || topBar.contains(e.relatedTarget)) return;
+      topBar.classList.remove('visible');
+    });
+
+    // ── webview 加载状态 ───────────────────────────────────────
+    webview.addEventListener('did-start-loading', () => {
+      loading.classList.remove('hidden');
+    });
+    webview.addEventListener('did-stop-loading', () => {
+      loading.classList.add('hidden');
+    });
+    webview.addEventListener('did-finish-load', () => {
+      loading.classList.add('hidden');
+      // 同步当前 URL 到输入框
+      const cur = webview.getURL();
+      if (cur && cur !== 'about:blank') urlInput.value = cur;
+    });
+    webview.addEventListener('did-fail-load', (e) => {
+      if (e.errorCode !== -3) { // -3 = aborted (正常跳转)
+        loadingText.textContent = `加载失败：${e.errorDescription}`;
+      } else {
+        loading.classList.add('hidden');
+      }
+    });
+
+    // ── 顶栏拖拽（JS 实现，避免 -webkit-app-region 动态失效）─────
+    let isDragging = false;
+
+    // 点击顶栏空白区域（非控件子元素）时开始拖拽
+    topBar.addEventListener('mousedown', (e) => {
+      // 排除控件区、访问按钮、输入框
+      if (e.target.closest('.bar-controls, .bar-go, .bar-url')) return;
+      if (winId === null) return;
+      isDragging = true;
+      window.browserAPI.dragStart(winId);
+      e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', () => {
+      if (!isDragging || winId === null) return;
+      window.browserAPI.dragMove(winId);
+    });
+
+    document.addEventListener('mouseup', () => {
+      if (!isDragging || winId === null) return;
+      isDragging = false;
+      window.browserAPI.dragEnd(winId);
+    });
+
+    // ── 隐身模式开关 ───────────────────────────────────────────
+    stealthCheck.addEventListener('change', () => {
+      if (winId === null) return;
+      window.browserAPI.setStealthMode(winId, stealthCheck.checked);
+    });
+
+    // ── 关闭 / 最小化 / 最大化 ──────────────────────────────────
+    closeBtn.addEventListener('click', () => { window.close(); });
+    minBtn.addEventListener('click',   () => { if (winId !== null) window.browserAPI.minimizeWin(winId); });
+    maxBtn.addEventListener('click',   () => { if (winId !== null) window.browserAPI.maximizeWin(winId); });
+    // ── 隐身隐藏时暫停网页视频 ───────────────────────
+    // winId 到位后再注册监听，避免 winId 为 null 时无效
+    window.browserAPI.onWinId((id) => {
+      winId = id;
+      window.browserAPI.onPauseVideo(id, () => {
+        if (!hasLoaded) return;
+        webview.executeJavaScript(
+          'document.querySelectorAll("video").forEach(v => { try { const isLive = !isFinite(v.duration) || isNaN(v.duration); if (!isLive) v.pause(); } catch(e){} })'
+        ).catch(() => {});
+      });
+      window.browserAPI.onResumeVideo(id, () => {
+        if (!hasLoaded) return;
+        webview.executeJavaScript(
+          'document.querySelectorAll("video").forEach(v => { try { if(v.paused) v.play(); } catch(e){} })'
+        ).catch(() => {});
+      });
+    });  </script>
+</body>
+</html>
