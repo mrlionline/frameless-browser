@@ -149,16 +149,15 @@
     .pin-btn  { background: rgba(50,50,50,0.85); }
     .close-btn { background: rgba(255,80,80,0.85); width: 14px; height: 14px; }
 
-    /* 图标（默认隐藏，hover 时显示） */
+    /* 图标（一直显示） */
     .win-btn::before, .win-btn::after {
       content: '';
       position: absolute;
       background: rgba(0,0,0,0.55);
       border-radius: 1px;
-      opacity: 0;
+      opacity: 1;
       transition: opacity 0.1s;
     }
-    .win-btn:hover::before, .win-btn:hover::after { opacity: 1; }
 
     /* 最小化: 横线 */
     .min-btn::before {
@@ -170,7 +169,7 @@
 
     /* 最大化: 方形边框 */
     .max-btn::before {
-      width: 8px; height: 8px;
+      width: 6px; height: 6px;
       border: 1.5px solid rgba(0,0,0,0.55);
       background: transparent;
       border-radius: 1.5px;
@@ -179,7 +178,7 @@
     }
     .max-btn::after { display: none; }
 
-    /* 钉住: 图标 */
+    /* 置顶: 图标 */
     .pin-btn {
       background-size: 70%;
       background-repeat: no-repeat;
@@ -548,7 +547,7 @@
       </label>
       <div class="bar-sep"></div>
       <div class="win-btns">
-        <button class="win-btn pin-btn" id="pinBtn" title="钉住"></button>
+        <button class="win-btn pin-btn" id="pinBtn" title="置顶"></button>
         <button class="win-btn min-btn" id="minBtn" title="最小化"></button>
         <button class="win-btn max-btn" id="maxBtn" title="最大化"></button>
         <button class="win-btn close-btn" id="closeBtn" title="关闭"></button>
@@ -576,7 +575,7 @@
     let winId      = null;
     let mouseInWin = true;
     let hasLoaded  = false; // 是否已访问过网页
-    let isPinned   = false; // 是否钉住
+    let isPinned   = false; // 是否置顶
 
     // ── 导航函数 ───────────────────────────────────────────────
     const welcome = document.getElementById('welcome');
@@ -696,7 +695,7 @@
       window.browserAPI.setStealthMode(winId, stealthCheck.checked);
     });
 
-    // ── 关闭 / 最小化 / 最大化 / 钉住 ──────────────────────────────────
+    // ── 关闭 / 最小化 / 最大化 / 置顶 ──────────────────────────────────
     closeBtn.addEventListener('click', () => { window.close(); });
     minBtn.addEventListener('click',   () => { if (winId !== null) window.browserAPI.minimizeWin(winId); });
     maxBtn.addEventListener('click',   () => { if (winId !== null) window.browserAPI.maximizeWin(winId); });
