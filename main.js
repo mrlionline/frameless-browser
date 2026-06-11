@@ -158,16 +158,22 @@ function createBrowserWindow(initialUrl) {
   };
   ipcMain.on(stealthChannel, stealthHandler);
 
-  // ── 最小化 / 最大化 ─────────────────────────────────────────────
+  // ── 最小化 / 最大化 / 置顶 ─────────────────────────────────────────────
   const minChannel = `minimize-${browserWin.id}`;
   const maxChannel = `maximize-${browserWin.id}`;
+  const pinChannel = `pin-${browserWin.id}`;
   const minHandler = () => { if (!browserWin.isDestroyed()) browserWin.minimize(); };
   const maxHandler = () => {
     if (browserWin.isDestroyed()) return;
     browserWin.isMaximized() ? browserWin.unmaximize() : browserWin.maximize();
   };
+  const pinHandler = (_, enabled) => {
+    if (browserWin.isDestroyed()) return;
+    browserWin.setAlwaysOnTop(enabled);
+  };
   ipcMain.on(minChannel, minHandler);
   ipcMain.on(maxChannel, maxHandler);
+  ipcMain.on(pinChannel, pinHandler);
 
   browserWin.on('closed', () => {
     ipcMain.removeListener(dragStartCh,    dragStartHandler);
@@ -176,6 +182,7 @@ function createBrowserWindow(initialUrl) {
     ipcMain.removeListener(stealthChannel, stealthHandler);
     ipcMain.removeListener(minChannel,     minHandler);
     ipcMain.removeListener(maxChannel,     maxHandler);
+    ipcMain.removeListener(pinChannel,     pinHandler);
     clearInterval(pollTimer);
   });
 }

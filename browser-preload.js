@@ -13,6 +13,7 @@ contextBridge.exposeInMainWorld('browserAPI', {
   dragEnd:      (winId) => ipcRenderer.send(`drag-end-${winId}`),
   minimizeWin:  (winId) => ipcRenderer.send(`minimize-${winId}`),
   maximizeWin:  (winId) => ipcRenderer.send(`maximize-${winId}`),
+  pinWin:       (winId, enabled) => ipcRenderer.send(`pin-${winId}`, enabled),
   openNewWindow:(url)   => ipcRenderer.send('open-new-window', url),
 
   // 主进程 → 渲染层（新窗口带初始 URL）

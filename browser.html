@@ -146,6 +146,7 @@
     /* 各按钮颜色 */
     .min-btn  { background: rgba(255,189,68,0.85); }
     .max-btn  { background: rgba(40,200,100,0.85); }
+    .pin-btn  { background: rgba(50,50,50,0.85); }
     .close-btn { background: rgba(255,80,80,0.85); width: 14px; height: 14px; }
 
     /* 图标（默认隐藏，hover 时显示） */
@@ -177,6 +178,22 @@
       transform: translate(-50%, -50%);
     }
     .max-btn::after { display: none; }
+
+    /* 钉住: 图标 */
+    .pin-btn {
+      background-size: 70%;
+      background-repeat: no-repeat;
+      background-position: center;
+      background-image: url('images/pin-icon.svg');
+      transition: background-color 0.2s, transform 0.2s;
+    }
+    .pin-btn.pinned {
+      background-color: rgba(91,155,213,0.85);
+      transform: rotate(45deg);
+    }
+    .pin-btn::before, .pin-btn::after {
+      display: none;
+    }
 
     /* 关闭: X */
     .close-btn::before,
@@ -531,6 +548,7 @@
       </label>
       <div class="bar-sep"></div>
       <div class="win-btns">
+        <button class="win-btn pin-btn" id="pinBtn" title="钉住"></button>
         <button class="win-btn min-btn" id="minBtn" title="最小化"></button>
         <button class="win-btn max-btn" id="maxBtn" title="最大化"></button>
         <button class="win-btn close-btn" id="closeBtn" title="关闭"></button>
@@ -547,6 +565,7 @@
     const closeBtn    = document.getElementById('closeBtn');
     const minBtn      = document.getElementById('minBtn');
     const maxBtn      = document.getElementById('maxBtn');
+    const pinBtn      = document.getElementById('pinBtn');
     const webview     = document.getElementById('webview');
     const loading     = document.getElementById('loading');
     const loadingText = document.getElementById('loading-text');
@@ -557,6 +576,7 @@
     let winId      = null;
     let mouseInWin = true;
     let hasLoaded  = false; // 是否已访问过网页
+    let isPinned   = false; // 是否钉住
 
     // ── 导航函数 ───────────────────────────────────────────────
     const welcome = document.getElementById('welcome');
@@ -676,10 +696,16 @@
       window.browserAPI.setStealthMode(winId, stealthCheck.checked);
     });
 
-    // ── 关闭 / 最小化 / 最大化 ──────────────────────────────────
+    // ── 关闭 / 最小化 / 最大化 / 钉住 ──────────────────────────────────
     closeBtn.addEventListener('click', () => { window.close(); });
     minBtn.addEventListener('click',   () => { if (winId !== null) window.browserAPI.minimizeWin(winId); });
     maxBtn.addEventListener('click',   () => { if (winId !== null) window.browserAPI.maximizeWin(winId); });
+    pinBtn.addEventListener('click',   () => {
+      if (winId === null) return;
+      isPinned = !isPinned;
+      pinBtn.classList.toggle('pinned', isPinned);
+      window.browserAPI.pinWin(winId, isPinned);
+    });
     // ── 隐身隐藏时暫停网页视频 ───────────────────────
     // winId 到位后再注册监听，避免 winId 为 null 时无效
     window.browserAPI.onWinId((id) => {
