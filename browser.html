@@ -423,6 +423,166 @@
     .swatch-content { background: rgba(15,52,96,0.6);   border: 1px solid rgba(91,155,213,0.2); }
     .swatch-side    { background: rgba(255,180,50,0.2);  border: 1px dashed rgba(255,180,50,0.5); }
 
+    /* ── 收藏按钮组 ── */
+    .fav-group {
+      position: relative;
+      display: flex;
+      align-items: center;
+      flex-shrink: 0;
+      margin-left: 6px;
+    }
+    .fav-star-btn, .fav-arrow-btn {
+      height: 26px;
+      background: rgba(255,210,60,0.18);
+      border: 1px solid rgba(255,210,60,0.3);
+      color: rgba(255,210,60,0.9);
+      font-size: 13px;
+      cursor: pointer;
+      transition: background 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+    }
+    .fav-star-btn {
+      width: 28px;
+      border-right: none;
+      border-radius: 5px 0 0 5px;
+    }
+    .fav-arrow-btn {
+      width: 18px;
+      border-radius: 0 5px 5px 0;
+      font-size: 10px;
+    }
+    .fav-star-btn:hover { background: rgba(255,210,60,0.32); }
+    .fav-arrow-btn:hover { background: rgba(255,210,60,0.32); }
+
+    /* 收藏夹下拉列表 */
+    .fav-dropdown {
+      position: absolute;
+      top: calc(100% + 6px);
+      right: 0;
+      min-width: 200px;
+      max-width: 300px;
+      max-height: 280px;
+      overflow-y: auto;
+      background: rgba(22, 28, 42, 0.96);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 7px;
+      z-index: 10000;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.55);
+      display: none;
+    }
+    .fav-dropdown.open { display: block; }
+    .fav-dropdown-header {
+      font-size: 11px;
+      color: rgba(255,255,255,0.35);
+      padding: 8px 12px 6px;
+      letter-spacing: 1px;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+    }
+    .fav-empty {
+      font-size: 12px;
+      color: rgba(255,255,255,0.3);
+      padding: 14px 12px;
+      text-align: center;
+    }
+    .fav-item {
+      display: flex;
+      align-items: center;
+      padding: 0 8px 0 12px;
+      height: 34px;
+      gap: 6px;
+      cursor: pointer;
+      transition: background 0.12s;
+    }
+    .fav-item:hover { background: rgba(255,255,255,0.07); }
+    .fav-item-name {
+      flex: 1;
+      font-size: 12px;
+      color: rgba(255,255,255,0.8);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .fav-item-del {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: none;
+      background: transparent;
+      color: rgba(255,255,255,0.25);
+      font-size: 14px;
+      line-height: 1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: background 0.12s, color 0.12s;
+    }
+    .fav-item-del:hover { background: rgba(255,80,80,0.3); color: rgba(255,100,100,0.9); }
+
+    /* 收藏对话框 */
+    .fav-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      z-index: 10001;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      display: none;
+    }
+    .fav-overlay.open { display: flex; }
+    .fav-dialog {
+      background: rgba(25, 32, 50, 0.98);
+      border: 1px solid rgba(255,255,255,0.13);
+      border-radius: 10px;
+      padding: 20px 22px 16px;
+      width: 280px;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.6);
+    }
+    .fav-dialog-title {
+      font-size: 13px;
+      color: rgba(255,255,255,0.8);
+      margin-bottom: 12px;
+      font-weight: 600;
+    }
+    .fav-dialog-input {
+      width: 100%;
+      height: 30px;
+      background: rgba(255,255,255,0.09);
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 5px;
+      color: #fff;
+      font-size: 12px;
+      padding: 0 10px;
+      outline: none;
+      margin-bottom: 14px;
+      box-sizing: border-box;
+    }
+    .fav-dialog-input:focus { border-color: rgba(91,155,213,0.8); }
+    .fav-dialog-btns {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+    .fav-dialog-btn {
+      height: 28px;
+      padding: 0 16px;
+      border-radius: 5px;
+      border: none;
+      font-size: 12px;
+      cursor: pointer;
+      transition: filter 0.15s;
+    }
+    .fav-dialog-btn:hover { filter: brightness(1.15); }
+    .fav-cancel  { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.7); }
+    .fav-confirm { background: rgba(91,155,213,0.75); color: #fff; }
+
     /* ── 加载提示 ── */
     #loading {
       position: fixed;
@@ -536,6 +696,18 @@
     <span class="bar-title">🌐</span>
     <input class="bar-url" id="urlInput" type="text" placeholder="输入网址，按 Enter 或点击访问" spellcheck="false" />
     <button class="bar-go" id="goBtn">访问</button>
+
+    <!-- 收藏按钮组 -->
+    <div class="fav-group" id="favGroup">
+      <button class="fav-star-btn" id="favStarBtn" title="收藏当前页">★</button>
+      <button class="fav-arrow-btn" id="favArrowBtn" title="收藏夹">▾</button>
+      <!-- 收藏夹下拉 -->
+      <div class="fav-dropdown" id="favDropdown">
+        <div class="fav-dropdown-header">收藏夹</div>
+        <div id="favList"></div>
+      </div>
+    </div>
+
     <div class="bar-controls">
       <label class="stealth-label">
         隐身模式
@@ -557,6 +729,18 @@
 
   <!-- 网页内容 -->
   <webview id="webview" src="about:blank" allowpopups></webview>
+
+  <!-- 收藏对话框 -->
+  <div class="fav-overlay" id="favOverlay">
+    <div class="fav-dialog">
+      <div class="fav-dialog-title">添加到收藏夹</div>
+      <input class="fav-dialog-input" id="favNameInput" type="text" placeholder="请输入收藏名称" />
+      <div class="fav-dialog-btns">
+        <button class="fav-dialog-btn fav-cancel" id="favCancelBtn">取消</button>
+        <button class="fav-dialog-btn fav-confirm" id="favConfirmBtn">确定</button>
+      </div>
+    </div>
+  </div>
 
   <script>
     const topBar      = document.getElementById('top-bar');
@@ -721,6 +905,132 @@
           'document.querySelectorAll("video").forEach(v => { try { if(v.paused) v.play(); } catch(e){} })'
         ).catch(() => {});
       });
-    });  </script>
+    });
+
+    // ── 收藏夹 ─────────────────────────────────────────────────
+    const FAV_KEY = 'frameless-browser-favorites';
+    const favStarBtn  = document.getElementById('favStarBtn');
+    const favArrowBtn = document.getElementById('favArrowBtn');
+    const favDropdown = document.getElementById('favDropdown');
+    const favList     = document.getElementById('favList');
+    const favOverlay  = document.getElementById('favOverlay');
+    const favNameInput= document.getElementById('favNameInput');
+    const favCancelBtn= document.getElementById('favCancelBtn');
+    const favConfirmBtn=document.getElementById('favConfirmBtn');
+
+    function loadFavorites() {
+      try { return JSON.parse(localStorage.getItem(FAV_KEY) || '[]'); }
+      catch { return []; }
+    }
+    function saveFavorites(list) {
+      localStorage.setItem(FAV_KEY, JSON.stringify(list));
+    }
+
+    function renderFavList() {
+      const favs = loadFavorites();
+      if (favs.length === 0) {
+        favList.innerHTML = '<div class="fav-empty">暂无收藏</div>';
+        return;
+      }
+      favList.innerHTML = '';
+      favs.forEach((fav, idx) => {
+        const item = document.createElement('div');
+        item.className = 'fav-item';
+
+        const name = document.createElement('span');
+        name.className = 'fav-item-name';
+        name.textContent = fav.name;
+        name.title = fav.url;
+        name.addEventListener('click', () => {
+          urlInput.value = fav.url;
+          navigate();
+          closeFavDropdown();
+        });
+
+        const del = document.createElement('button');
+        del.className = 'fav-item-del';
+        del.textContent = '×';
+        del.title = '删除';
+        del.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const list = loadFavorites();
+          list.splice(idx, 1);
+          saveFavorites(list);
+          renderFavList();
+        });
+
+        item.appendChild(name);
+        item.appendChild(del);
+        favList.appendChild(item);
+      });
+    }
+
+    function openFavDropdown() {
+      renderFavList();
+      favDropdown.classList.add('open');
+    }
+    function closeFavDropdown() {
+      favDropdown.classList.remove('open');
+    }
+
+    favArrowBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (favDropdown.classList.contains('open')) {
+        closeFavDropdown();
+      } else {
+        openFavDropdown();
+      }
+    });
+
+    // 点击页面其他区域关闭下拉
+    document.addEventListener('click', (e) => {
+      if (!document.getElementById('favGroup').contains(e.target)) {
+        closeFavDropdown();
+      }
+    });
+
+    // 点击五角星：打开收藏对话框
+    favStarBtn.addEventListener('click', () => {
+      closeFavDropdown();
+      const curUrl = webview.getURL ? webview.getURL() : urlInput.value.trim();
+      if (!curUrl || curUrl === 'about:blank') {
+        favNameInput.value = urlInput.value.trim();
+      } else {
+        // 尝试用网页标题，否则用 URL
+        const title = webview.getTitle ? webview.getTitle() : '';
+        favNameInput.value = title || curUrl;
+      }
+      favOverlay.classList.add('open');
+      setTimeout(() => favNameInput.focus(), 50);
+      favNameInput.select();
+    });
+
+    // 取消
+    favCancelBtn.addEventListener('click', () => {
+      favOverlay.classList.remove('open');
+    });
+    favOverlay.addEventListener('click', (e) => {
+      if (e.target === favOverlay) favOverlay.classList.remove('open');
+    });
+
+    // 确定保存
+    function confirmAddFav() {
+      const name = favNameInput.value.trim();
+      if (!name) return;
+      const curUrl = (webview.getURL ? webview.getURL() : '') || urlInput.value.trim();
+      if (!curUrl || curUrl === 'about:blank') return;
+      const list = loadFavorites();
+      list.push({ name, url: curUrl });
+      saveFavorites(list);
+      favOverlay.classList.remove('open');
+    }
+    favConfirmBtn.addEventListener('click', confirmAddFav);
+    favNameInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { confirmAddFav(); e.stopPropagation(); }
+      if (e.key === 'Escape') { favOverlay.classList.remove('open'); e.stopPropagation(); }
+      e.stopPropagation();
+    });
+    favNameInput.addEventListener('mousedown', (e) => e.stopPropagation());
+  </script>
 </body>
 </html>

@@ -1,6 +1,6 @@
 {
   "name": "frameless-browser",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "无边框浏览器 - 支持隐身模式的透明悬浮浏览器",
   "main": "main.js",
   "scripts": {
